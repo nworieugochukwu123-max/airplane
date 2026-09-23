@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Skyline Airport</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: #eaf3fb;
+    height: 100%;
+    overscroll-behavior-y: none;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #16324f; }
+
+  .cloud-scroll {
+    position: relative;
+    height: 600vh; /* fallback only — JS sets the real pixel height on load */
+  }
+
+  .cloud-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+
+  #cloudCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(88%, 640px);
+    height: 140px;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .hero-line {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(26px, 6vw, 50px);
+    font-weight: 700;
+    line-height: 1.2;
+    color: #0b2545;
+    text-shadow: 0 4px 30px rgba(11, 37, 69, 0.18);
+    opacity: 0;
+  }
+
+  @media (max-width: 480px) {
+    .hero-text { width: 92%; }
+  }
+
+  .cloud-caption {
+    position: absolute;
+    left: 50%;
+    bottom: max(50px, env(safe-area-inset-bottom, 0px) + 30px);
+    transform: translateX(-50%);
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #16324f;
+    opacity: 0.6;
+    pointer-events: none;
+    text-align: center;
+    padding: 0 20px;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 480px) {
+    .cloud-caption {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      bottom: max(28px, env(safe-area-inset-bottom, 0px) + 18px);
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="cloud-scroll" id="cloudScroll">
+  <div class="cloud-sticky">
+    <canvas id="cloudCanvas"></canvas>
+    <div class="hero-text">
+      <div class="hero-line" id="heroLineA"></div>
+      <div class="hero-line" id="heroLineB"></div>
+    </div>
+    <div class="cloud-caption">Scroll to land</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const canvas = document.getElementById('cloudCanvas');
+  const wrapper = document.getElementById('cloudScroll');
+  const sticky = wrapper.querySelector('.cloud-sticky');
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+
+  function setPixelRatio() {
+    const cap = window.innerWidth < 600 ? 1.25 : 1.5;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
+  }
+  setPixelRatio();
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x9fc9e8);
+  scene.fog = new THREE.FogExp2(0xdcecf9, 0.009);
+
+  const VERTICAL_FOV = 65;
+  const camera = new THREE.PerspectiveCamera(VERTICAL_FOV, 1, 0.1, 2500);
+  camera.position.set(0, 0, 0);
+  // A gentle downward tilt — not a hard split — biases most of the frame
+  // toward below-eye-level, so clouds (which all sit below y=0) end up
+  // concentrated in the lower part of the view while the top stays open sky.
+  camera.rotation.order = 'YXZ';
+  camera.rotation.x = -THREE.MathUtils.degToRad(14);
+
+  function resizeRenderer() {
+    const w = sticky.clientWidth;
+    const h = sticky.clientHeight;
+    if (!w || !h) return;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+  }
+
+  function makeCloudTexture() {
+    const size = 160;
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    grad.addColorStop(0, 'rgba(255,255,255,0.95)');
+    grad.addColorStop(0.45, 'rgba(255,255,255,0.7)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    return new THREE.CanvasTexture(c);
+  }
+  const cloudTexture = makeCloudTexture();
+  const cloudMaterial = new THREE.SpriteMaterial({
+    map: cloudTexture,
+    transparent: true,
+    depthWrite: false
+  });
+
+  // Longer tunnel, more/bigger/denser sprites = a thicker, longer cloud bank
+  const TUNNEL_LENGTH = 6000;
+  const SCROLL_MULTIPLIER = 28; // wrapper height = 28x viewport height — much, much longer scroll
+  const cloudCount = 950;
+  const clouds = [];
+
+  for (let i = 0; i < cloudCount; i++) {
+    const sprite = new THREE.Sprite(cloudMaterial.clone());
+    const z = -Math.random() * TUNNEL_LENGTH;
+    const x = (Math.random() - 0.5) * 420;
+    const y = -35 - Math.random() * 150;
+    sprite.position.set(x, y, z);
+    const scale = 45 + Math.random() * 95;
+    sprite.scale.set(scale, scale, 1);
+    sprite.material.opacity = 0.65 + Math.random() * 0.35;
+    sprite.userData.driftSpeed = 0.05 + Math.random() * 0.1;
+    sprite.userData.baseY = sprite.position.y;
+    scene.add(sprite);
+    clouds.push(sprite);
+  }
+
+  let progress = 0;
+  let ticking = false;
+
+  const heroLines = [
+    "You're above the weather now",
+    'Somewhere below, the city wakes up',
+    'Nothing up here but sky and quiet',
+    'The runway comes into view',
+    'Wheels down in three, two, one',
+    "Skyline Airport. You've arrived."
+  ];
+  const heroA = document.getElementById('heroLineA');
+  const heroB = document.getElementById('heroLineB');
+  let heroIndex = -1;
+
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function updateHeroText(p) {
+    const stagePos = p * (heroLines.length - 1);
+    const idx = Math.min(heroLines.length - 2, Math.floor(stagePos));
+    const frac = stagePos - idx;
+    const eased = easeInOutCubic(frac);
+
+    if (idx !== heroIndex) {
+      heroIndex = idx;
+      heroA.textContent = heroLines[idx];
+      heroB.textContent = heroLines[idx + 1];
+    }
+
+    heroA.style.opacity = 1 - eased;
+    heroB.style.opacity = eased;
+    heroA.style.transform = `translateY(${-eased * 26}px)`;
+    heroB.style.transform = `translateY(${(1 - eased) * 26}px)`;
+    heroA.style.filter = `blur(${eased * 6}px)`;
+    heroB.style.filter = `blur(${(1 - eased) * 6}px)`;
+  }
+
+  function setScrollHeight() {
+    wrapper.style.height = Math.round(SCROLL_MULTIPLIER * window.innerHeight) + 'px';
+  }
+
+  function updateProgress() {
+    ticking = false;
+    const rect = wrapper.getBoundingClientRect();
+    const total = rect.height - window.innerHeight;
+    progress = total > 0 ? Math.min(Math.max(-rect.top / total, 0), 1) : 0;
+
+    const fadeStart = 0.9;
+    sticky.style.opacity = progress < fadeStart ? 1 : 1 - (progress - fadeStart) / (1 - fadeStart);
+
+    updateHeroText(progress);
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(updateProgress);
+      ticking = true;
+    }
+  }, { passive: true });
+
+  // Mobile browsers fire 'resize' when the address bar shows/hides while
+  // scrolling. Reacting to that (as the old code did indirectly via vh
+  // units) recalculated the scroll length mid-scroll and caused the jump/
+  // stutter bug. Only real width changes (rotation, actual resize) should
+  // trigger a layout recompute.
+  let lastWidth = window.innerWidth;
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth) return;
+    lastWidth = window.innerWidth;
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      setScrollHeight();
+      resizeRenderer();
+      setPixelRatio();
+      updateProgress();
+    }, 120);
+  });
+
+  const clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    camera.position.z = -progress * TUNNEL_LENGTH;
+
+    clouds.forEach(c => {
+      c.position.y = c.userData.baseY + Math.sin(t * c.userData.driftSpeed + c.position.z) * 2;
+    });
+
+    renderer.render(scene, camera);
+  }
+
+  setScrollHeight();
+  resizeRenderer();
+  updateProgress();
+  animate();
+})();
+</script>
+
+</body>
+</html>
