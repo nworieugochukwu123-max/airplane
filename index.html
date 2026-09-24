@@ -99,6 +99,7 @@
   }
   .hero {
     min-height: 100vh;
+    min-height: 100dvh;
     position: relative;
     color: white; /* scoped here, not on body, so future sections aren't affected */
     overflow: hidden;
@@ -131,15 +132,16 @@
   /* ========================= NAVBAR ========================= */
   nav {
     width: 100%;
-    height: 80px;
+    height: calc(80px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 5%;
-    position: relative;
+    padding-left: 5%;
+    padding-right: 5%;
     z-index: 10;
-    position:fixed;
-    top:0;
+    position: fixed;
+    top: 0;
   }
 
   .logo {
@@ -230,13 +232,49 @@
     cursor: pointer;
   }
 
+  .mobile-menu {
+    display: none;
+    position: fixed;
+    top: calc(70px + env(safe-area-inset-top, 0px));
+    left: 0;
+    right: 0;
+    z-index: 9;
+    flex-direction: column;
+    background: rgba(6, 40, 74, 0.97);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 6px 6% calc(20px + env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - 70px - env(safe-area-inset-top, 0px));
+    overflow-y: auto;
+  }
+
+  .mobile-menu.open { display: flex; }
+
+  .mobile-menu a {
+    color: white;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 15px 2px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .mobile-menu a.active { color: var(--blue-lighter); }
+
+  .mobile-menu .check-in {
+    margin-top: 14px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+  }
+
   /* ========================= HERO CONTENT ========================= */
   .hero-content {
     position: relative;
     z-index: 2;
     max-width: 700px;
     padding-left: 5%;
-    padding-top: 120px;
+    padding-right: 5%;
+    padding-top: calc(120px + env(safe-area-inset-top, 0px));
   }
 
   .hero-small-title {
@@ -320,6 +358,33 @@
     margin-left: 2px;
   }
 
+  /* ========================= TABLET ========================= */
+  @media (max-width: 1100px) {
+    .nav-links { gap: 22px; }
+    .nav-right { gap: 15px; }
+  }
+
+  /* ========================= MOBILE ========================= */
+  @media (max-width: 850px) {
+    nav { height: calc(70px + env(safe-area-inset-top, 0px)); }
+    .nav-links, .nav-right { display: none; }
+    .menu-btn { display: block; }
+    .hero-content { padding-top: calc(130px + env(safe-area-inset-top, 0px)); }
+    .hero h1 { font-size: 52px; }
+    .hero-description { font-size: 15px; }
+  }
+
+  /* ========================= SMALL PHONES ========================= */
+  @media (max-width: 500px) {
+    .logo { font-size: 14px; }
+    .logo i { font-size: 23px; }
+    .hero-content { padding-top: calc(100px + env(safe-area-inset-top, 0px)); }
+    .hero-small-title { font-size: 10px; letter-spacing: 2px; }
+    .hero h1 { font-size: 43px; }
+    .hero-description { font-size: 14px; line-height: 1.6; }
+    .hero-buttons { flex-direction: column; align-items: flex-start; }
+  }
+
   @media (max-width: 480px) {
     .cloud-caption {
       font-size: 11px;
@@ -364,8 +429,18 @@
       <a href="#" class="check-in">Check In</a>
     </div>
 
-    <div class="menu-btn"><i class="fa-solid fa-bars"></i></div>
+    <div class="menu-btn" id="menuBtn" role="button" tabindex="0" aria-label="Open menu" aria-expanded="false"><i class="fa-solid fa-bars"></i></div>
   </nav>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#home" class="active">Home</a>
+    <a href="#">Flights</a>
+    <a href="#">Services</a>
+    <a href="#">Terminal Guide</a>
+    <a href="#">About Us</a>
+    <a href="#">Contact</a>
+    <a href="#" class="check-in">Check In</a>
+  </div>
 
   <div class="hero-content">
     <p class="hero-small-title" id="home">WELCOME TO SKYLINE INTERNATIONAL AIRPORT</p>
@@ -564,6 +639,89 @@
   resizeRenderer();
   updateProgress();
   animate();
+})();
+</script>
+<script>
+(() => {
+  const menuBtn = document.getElementById('menuBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  if (!menuBtn || !mobileMenu) return;
+
+  function setOpen(open) {
+    mobileMenu.classList.toggle('open', open);
+    menuBtn.setAttribute('aria-expanded', String(open));
+    menuBtn.innerHTML = open ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-bars"></i>';
+  }
+
+  menuBtn.addEventListener('click', () => setOpen(!mobileMenu.classList.contains('open')));
+  menuBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setOpen(!mobileMenu.classList.contains('open'));
+    }
+  });
+
+  mobileMenu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 850) setOpen(false);
+  });
+})();
+</script>
+<script>
+(() => {
+  // The cloud-scroll section plays itself from top to the hero on load.
+  // The moment the person actually scrolls — wheel, touch, or keyboard —
+  // autoplay stops for good and they're in full manual control.
+  const wrapper = document.getElementById('cloudScroll');
+  if (!wrapper) return;
+  if (window.scrollY >= 2) return; // don't autoplay from a restored scroll position
+
+  const AUTOPLAY_DURATION = 24000; // ms for the full top-to-hero journey
+  const SCROLL_KEYS = ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Spacebar', 'Home', 'End'];
+
+  function easeInOutSine(t) {
+    return -(Math.cos(Math.PI * t) - 1) / 2;
+  }
+
+  let active = true;
+  let frame = null;
+  let startTime = null;
+
+  function stop() {
+    if (!active) return;
+    active = false;
+    if (frame) cancelAnimationFrame(frame);
+    window.removeEventListener('wheel', stop);
+    window.removeEventListener('touchstart', stop);
+    window.removeEventListener('keydown', onKeydown);
+  }
+
+  function onKeydown(e) {
+    if (SCROLL_KEYS.includes(e.key)) stop();
+  }
+
+  function step(now) {
+    if (!active) return;
+    if (startTime === null) startTime = now;
+    const fullHeight = wrapper.offsetHeight; // scrolling this far lands with
+    if (fullHeight <= window.innerHeight) {   // the hero filling the screen,
+      frame = requestAnimationFrame(step);    // one viewport past where the
+      return;                                 // sticky cloud pin releases
+    }
+    const t = Math.min(1, (now - startTime) / AUTOPLAY_DURATION);
+    window.scrollTo(0, easeInOutSine(t) * fullHeight);
+    if (t < 1) {
+      frame = requestAnimationFrame(step);
+    } else {
+      active = false; // hero is now fully in view — autoplay's job is done
+    }
+  }
+
+  window.addEventListener('wheel', stop, { passive: true });
+  window.addEventListener('touchstart', stop, { passive: true });
+  window.addEventListener('keydown', onKeydown);
+  frame = requestAnimationFrame(step);
 })();
 </script>
 
