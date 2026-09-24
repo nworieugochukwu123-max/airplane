@@ -4,13 +4,32 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Skyline Airport</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --navy-deep: 3, 25, 49;      /* rgb components, used in hero gradient */
+    --navy-overlay: 2, 22, 42;   /* rgb components, used in secondary overlay */
+    --navy-dark: #06284a;
+    --blue-bright: #149bea;
+    --blue-bright-hover: #087fc5;
+    --blue-light: #5bc1ff;
+    --blue-lighter: #62c7ff;
+    --blue-accent: #28a9ff;
+    --blue-pale: #9edcff;
+    --bg-page: #f5f8fb;
+  }
 
   html, body {
     background: #eaf3fb;
     height: 100%;
     overscroll-behavior-y: none;
+    scroll-behavior: smooth;
   }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #16324f; }
 
@@ -78,6 +97,228 @@
     padding: 0 20px;
     white-space: nowrap;
   }
+  .hero {
+    min-height: 100vh;
+    position: relative;
+    color: white; /* scoped here, not on body, so future sections aren't affected */
+    overflow: hidden;
+    background-color: var(--navy-dark); /* fallback if airport.jpg fails to load */
+    /* Put airport.jpg in the same folder as this HTML file. */
+    background-image: linear-gradient(
+        90deg,
+        rgba(var(--navy-deep), 0.85) 0%,
+        rgba(var(--navy-deep), 0.60) 40%,
+        rgba(var(--navy-deep), 0.15) 100%
+      ),
+      url("https://images.unsplash.com/photo-1561131668-f63504fc549d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGFpcnBvcnR8ZW58MHx8MHx8fDA%3D");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(var(--navy-overlay), 0.10),
+      rgba(var(--navy-overlay), 0.35)
+    );
+    pointer-events: none;
+  }
+
+  /* ========================= NAVBAR ========================= */
+  nav {
+    width: 100%;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 5%;
+    position: relative;
+    z-index: 10;
+    position:fixed;
+    top:0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 17px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .logo i {
+    font-size: 28px;
+    transform: rotate(-10deg);
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 35px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: white;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    position: relative;
+    transition: 0.3s ease;
+  }
+
+  .nav-links a:hover { color: var(--blue-lighter); }
+
+  .nav-links a.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -10px;
+    width: 100%;
+    height: 2px;
+    background: var(--blue-accent);
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .search {
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .search:hover { color: var(--blue-lighter); }
+
+  .language {
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .language i {
+    font-size: 9px;
+    margin-left: 4px;
+  }
+
+  .check-in {
+    padding: 11px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 30px;
+    color: white;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: 0.3s ease;
+  }
+
+  .check-in:hover {
+    background: white;
+    color: var(--navy-dark);
+  }
+
+  .menu-btn {
+    display: none;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  /* ========================= HERO CONTENT ========================= */
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 700px;
+    padding-left: 5%;
+    padding-top: 120px;
+  }
+
+  .hero-small-title {
+    font-size: 12px;
+    letter-spacing: 3px;
+    font-weight: 600;
+    color: var(--blue-pale);
+    margin-bottom: 18px;
+  }
+
+  .hero h1 {
+    font-size: clamp(45px, 6vw, 78px);
+    line-height: 1.03;
+    font-weight: 800;
+    margin-bottom: 25px;
+  }
+
+  .hero h1 span { color: var(--blue-light); }
+
+  .hero-description {
+    max-width: 520px;
+    font-size: 17px;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.88);
+    margin-bottom: 35px;
+  }
+
+  /* ========================= HERO BUTTONS ========================= */
+  .hero-buttons {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .explore-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 25px;
+    background: var(--blue-bright);
+    color: white;
+    text-decoration: none;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.3s ease;
+  }
+
+  .explore-btn:hover {
+    background: var(--blue-bright-hover);
+    transform: translateY(-2px);
+  }
+
+  .story-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+  }
+
+  .play-icon {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+  }
+
+  .story-btn:hover .play-icon {
+    background: white;
+    color: var(--navy-dark);
+  }
+
+  .play-icon i {
+    font-size: 11px;
+    margin-left: 2px;
+  }
 
   @media (max-width: 480px) {
     .cloud-caption {
@@ -100,6 +341,51 @@
     <div class="cloud-caption">Scroll to land</div>
   </div>
 </div>
+
+<section class="hero">
+  <nav>
+    <div class="logo">
+      <i class="fa-solid fa-plane"></i>
+      <span>Skyline International Airport</span>
+    </div>
+
+    <ul class="nav-links">
+      <li><a href="#home" class="active">Home</a></li>
+      <li><a href="#">Flights</a></li>
+      <li><a href="#">Services</a></li>
+      <li><a href="#">Terminal Guide</a></li>
+      <li><a href="#">About Us</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+
+    <div class="nav-right">
+      <div class="search"><i class="fa-solid fa-magnifying-glass"></i></div>
+      <div class="language">EN <i class="fa-solid fa-chevron-down"></i></div>
+      <a href="#" class="check-in">Check In</a>
+    </div>
+
+    <div class="menu-btn"><i class="fa-solid fa-bars"></i></div>
+  </nav>
+
+  <div class="hero-content">
+    <p class="hero-small-title" id="home">WELCOME TO SKYLINE INTERNATIONAL AIRPORT</p>
+    <h1>Connecting People,<br>Across <span>The World</span></h1>
+    <p class="hero-description">
+      Experience a seamless journey with modern facilities, world-class services and global connections.
+    </p>
+
+    <div class="hero-buttons">
+      <a href="#" class="explore-btn">
+        Explore Flights <i class="fa-solid fa-arrow-right"></i>
+      </a>
+      <a href="#" class="story-btn">
+        <span class="play-icon"><i class="fa-solid fa-play"></i></span>
+        Watch Our Storyj
+      </a>
+    </div>
+  </div>
+</section>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
